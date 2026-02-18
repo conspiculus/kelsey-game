@@ -6,6 +6,7 @@ const PORT = process.env.PORT || 3000;
 const DATA_DIR = process.env.DATA_DIR || __dirname;
 const SAVE_FILE = path.join(DATA_DIR, 'story_planner_data.json');
 const SITE_PASSWORD = process.env.SITE_PASSWORD || 'kelsey2026';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin2026';
 
 // --- Data helpers ---
 
@@ -74,6 +75,12 @@ function checkAuth(req) {
   return token === SITE_PASSWORD;
 }
 
+function checkAdminAuth(req) {
+  const auth = req.headers['authorization'] || '';
+  const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
+  return token === ADMIN_PASSWORD;
+}
+
 // --- Server ---
 
 const server = http.createServer(async (req, res) => {
@@ -81,7 +88,7 @@ const server = http.createServer(async (req, res) => {
   if (req.method === 'OPTIONS') {
     res.writeHead(204, {
       'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     });
     res.end();
@@ -108,6 +115,94 @@ const server = http.createServer(async (req, res) => {
     } catch (e) {
       sendJSON(res, 400, { error: 'Invalid JSON' });
     }
+    return;
+  }
+
+  // Serve admin page
+  if (req.method === 'GET' && req.url === '/admin') {
+    const html = fs.readFileSync(path.join(__dirname, 'admin.html'), 'utf8');
+    res.writeHead(200, { 'Content-Type': 'text/html' });
+    res.end(html);
+    return;
+  }
+
+  // POST /api/admin/auth — verify admin password
+  if (req.method === 'POST' && req.url === '/api/admin/auth') {
+    try {
+      const { password } = await parseBody(req);
+      if (password === ADMIN_PASSWORD) {
+        sendJSON(res, 200, { ok: true });
+      } else {
+        sendJSON(res, 401, { error: 'Wrong password' });
+      }
+    } catch (e) {
+      sendJSON(res, 400, { error: 'Invalid JSON' });
+    }
+    return;
+  }
+
+  // Admin API routes — require admin auth
+  if (req.url.startsWith('/api/admin/')) {
+    if (!checkAdminAuth(req)) {
+      sendJSON(res, 401, { error: 'Unauthorized' });
+      return;
+    }
+
+    // GET /api/admin/data — return full data (for admin dashboard)
+    if (req.method === 'GET' && req.url === '/api/admin/data') {
+      const data = readData();
+      sendJSON(res, 200, data);
+      return;
+    }
+
+    // DELETE /api/admin/users/:userId
+    const userDeleteMatch = req.url.match(/^\/api\/admin\/users\/(.+)$/);
+    if (req.method === 'DELETE' && userDeleteMatch) {
+      const userId = decodeURIComponent(userDeleteMatch[1]);
+      const data = readData();
+      if (!data.users[userId]) {
+        sendJSON(res, 404, { error: 'User not found' });
+        return;
+      }
+      delete data.users[userId];
+      data.version++;
+      writeData(data);
+      sendJSON(res, 200, { ok: true });
+      return;
+    }
+
+    // PUT /api/admin/fields — overwrite a field's segments
+    if (req.method === 'PUT' && req.url === '/api/admin/fields') {
+      try {
+        const { fieldId, segments } = await parseBody(req);
+        if (!fieldId || !Array.isArray(segments)) {
+          sendJSON(res, 400, { error: 'Missing fieldId or segments array' });
+          return;
+        }
+        const data = readData();
+        data.fields[fieldId] = segments;
+        data.version++;
+        writeData(data);
+        sendJSON(res, 200, { ok: true, version: data.version });
+      } catch (e) {
+        sendJSON(res, 400, { error: 'Invalid JSON' });
+      }
+      return;
+    }
+
+    // DELETE /api/admin/fields/:fieldId — clear a field
+    const fieldDeleteMatch = req.url.match(/^\/api\/admin\/fields\/(.+)$/);
+    if (req.method === 'DELETE' && fieldDeleteMatch) {
+      const fieldId = decodeURIComponent(fieldDeleteMatch[1]);
+      const data = readData();
+      delete data.fields[fieldId];
+      data.version++;
+      writeData(data);
+      sendJSON(res, 200, { ok: true });
+      return;
+    }
+
+    sendJSON(res, 404, { error: 'Not found' });
     return;
   }
 
