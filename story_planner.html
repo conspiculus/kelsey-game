@@ -550,6 +550,12 @@
     box-shadow: 0 0 12px rgba(255,255,255,0.3);
   }
 
+  .swatch.taken {
+    opacity: 0.25;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
   .modal-btn {
     font-family: 'Cinzel', serif;
     font-weight: 700;
@@ -1185,7 +1191,8 @@
 
   const PRESET_COLORS = [
     '#e06c75', '#61afef', '#98c379', '#d19a66',
-    '#c678dd', '#56b6c2', '#e5c07b', '#be5046'
+    '#c678dd', '#56b6c2', '#e5c07b', '#be5046',
+    '#ff79c6', '#8be9fd', '#f1a5b7'
   ];
 
   // === Utility ===
@@ -1310,16 +1317,30 @@
     const swatchContainer = document.getElementById('colorSwatches');
     let selectedColor = null;
 
+    // Collect colors already claimed by existing users
+    const takenColors = new Set();
+    try {
+      const resp = await fetch('/api/data', { headers: authHeaders() });
+      if (resp.ok) {
+        const d = await resp.json();
+        Object.values(d.users || {}).forEach(u => takenColors.add(u.color));
+      }
+    } catch (e) { /* proceed without filtering */ }
+
     PRESET_COLORS.forEach(color => {
       const s = document.createElement('div');
       s.className = 'swatch';
       s.style.background = color;
-      s.addEventListener('click', () => {
-        document.querySelectorAll('.swatch').forEach(sw => sw.classList.remove('selected'));
-        s.classList.add('selected');
-        selectedColor = color;
-        updateJoinBtn();
-      });
+      if (takenColors.has(color)) {
+        s.classList.add('taken');
+      } else {
+        s.addEventListener('click', () => {
+          document.querySelectorAll('.swatch').forEach(sw => sw.classList.remove('selected'));
+          s.classList.add('selected');
+          selectedColor = color;
+          updateJoinBtn();
+        });
+      }
       swatchContainer.appendChild(s);
     });
 
