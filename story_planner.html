@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Story Planner — Decision Tree Worksheet</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #c9a84c;
+    --gold-dim: rgba(201,168,76,0.2);
+    --gold-glow: rgba(201,168,76,0.08);
+    --red: #b43c3c;
+    --red-dim: rgba(180,60,60,0.15);
+    --green: #5b8a72;
+    --green-dim: rgba(91,138,114,0.1);
+    --bg: #0a0a0f;
+    --bg-card: #0f0f18;
+    --text: #e8dcc8;
+    --text-dim: #8a7e6b;
+    --text-mid: #c4b89a;
+    --border: rgba(201,168,76,0.12);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Crimson Text', Georgia, serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 40px 20px 80px;
+  }
+
+  h1 {
+    font-family: 'Cinzel', serif;
+    font-weight: 900;
+    font-size: clamp(1.4rem, 4vw, 2.2rem);
+    text-align: center;
+    color: var(--gold);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+    text-shadow: 0 0 30px rgba(201,168,76,0.3);
+  }
+
+  .subtitle {
+    text-align: center;
+    font-size: 1rem;
+    color: var(--text-dim);
+    font-style: italic;
+    margin-bottom: 32px;
+  }
+
+  /* Mini tree */
+  .tree-wrap {
+    position: relative;
+    overflow-x: auto;
+    margin-bottom: 40px;
+    padding-bottom: 8px;
+  }
+
+  svg.tree { display: block; margin: 0 auto; }
+
+  /* Turn dividers */
+  .turn-section {
+    margin-bottom: 48px;
+    position: relative;
+  }
+
+  .turn-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+
+  .turn-badge {
+    font-family: 'Cinzel', serif;
+    font-weight: 900;
+    font-size: 0.8rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--bg);
+    background: var(--gold);
+    padding: 4px 14px;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+
+  .turn-badge.ending {
+    background: var(--red);
+    color: #fbe8e0;
+  }
+
+  .turn-line {
+    flex: 1;
+    height: 1px;
+    background: var(--gold-dim);
+  }
+
+  .turn-desc {
+    font-size: 0.88rem;
+    color: var(--text-dim);
+    font-style: italic;
+    white-space: nowrap;
+  }
+
+  /* Animation cards */
+  .anim-grid {
+    display: grid;
+    gap: 20px;
+  }
+
+  .anim-grid.cols-1 { grid-template-columns: 1fr; }
+  .anim-grid.cols-2 { grid-template-columns: 1fr 1fr; }
+  .anim-grid.cols-4 { grid-template-columns: 1fr 1fr; }
+
+  @media (min-width: 700px) {
+    .anim-grid.cols-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+  }
+
+  .anim-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    position: relative;
+    transition: border-color 0.3s;
+  }
+
+  .anim-card:focus-within {
+    border-color: rgba(201,168,76,0.4);
+    box-shadow: 0 0 20px rgba(201,168,76,0.06);
+  }
+
+  .anim-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 20px; right: 20px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold-dim), transparent);
+  }
+
+  .anim-card.ending-card {
+    border-color: var(--red-dim);
+  }
+
+  .anim-card.ending-card:focus-within {
+    border-color: rgba(180,60,60,0.4);
+    box-shadow: 0 0 20px rgba(180,60,60,0.08);
+  }
+
+  .anim-card.ending-card::before {
+    background: linear-gradient(90deg, transparent, var(--red-dim), transparent);
+  }
+
+  .card-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .card-number {
+    font-family: 'Cinzel', serif;
+    font-weight: 900;
+    font-size: 1.1rem;
+    color: var(--gold);
+    background: var(--gold-glow);
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: 1px solid var(--gold-dim);
+    flex-shrink: 0;
+  }
+
+  .card-number.ending-num {
+    color: var(--red);
+    background: var(--red-dim);
+    border-color: rgba(180,60,60,0.3);
+    width: auto;
+    border-radius: 4px;
+    padding: 0 10px;
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+  }
+
+  .card-path {
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    font-style: italic;
+    letter-spacing: 0.02em;
+  }
+
+  .field-group {
+    margin-bottom: 14px;
+  }
+
+  .field-group:last-child {
+    margin-bottom: 0;
+  }
+
+  .field-label {
+    font-family: 'Cinzel', serif;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 6px;
+    display: block;
+  }
+
+  .field-label.choice-label {
+    color: var(--green);
+  }
+
+  .field-label.ending-label {
+    color: var(--red);
+  }
+
+  textarea, input[type="text"] {
+    width: 100%;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: 'Crimson Text', Georgia, serif;
+    font-size: 0.95rem;
+    line-height: 1.55;
+    padding: 10px 12px;
+    resize: vertical;
+    transition: border-color 0.3s, background 0.3s;
+  }
+
+  textarea:focus, input[type="text"]:focus {
+    outline: none;
+    border-color: rgba(201,168,76,0.35);
+    background: rgba(255,255,255,0.05);
+  }
+
+  .ending-card textarea:focus, .ending-card input[type="text"]:focus {
+    border-color: rgba(180,60,60,0.35);
+  }
+
+  textarea.story-field {
+    min-height: 80px;
+  }
+
+  textarea.story-field-lg {
+    min-height: 110px;
+  }
+
+  input.choice-field {
+    border-color: rgba(91,138,114,0.2);
+  }
+
+  input.choice-field:focus {
+    border-color: rgba(91,138,114,0.45);
+  }
+
+  .choice-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .choice-box {
+    position: relative;
+  }
+
+  .choice-arrow {
+    font-size: 0.72rem;
+    color: var(--green);
+    margin-top: 4px;
+    font-style: italic;
+    opacity: 0.7;
+  }
+
+  .merge-note {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+    color: var(--green);
+    font-style: italic;
+    margin-top: 6px;
+    padding: 3px 8px;
+    background: var(--green-dim);
+    border-radius: 4px;
+  }
+
+  .merge-dot {
+    width: 8px;
+    height: 8px;
+    border: 1.5px dashed var(--green);
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* Save bar */
+  .save-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(transparent, var(--bg) 30%);
+    padding: 30px 20px 20px;
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    z-index: 100;
+  }
+
+  .btn {
+    font-family: 'Cinzel', serif;
+    font-weight: 700;
+    font-size: 0.78rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 10px 24px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-gold {
+    background: var(--gold);
+    color: var(--bg);
+  }
+
+  .btn-gold:hover {
+    background: #d4b55a;
+    box-shadow: 0 0 20px rgba(201,168,76,0.3);
+  }
+
+  .btn-outline {
+    background: transparent;
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+  }
+
+  .btn-outline:hover {
+    border-color: var(--gold-dim);
+    color: var(--text);
+  }
+
+  .toast {
+    position: fixed;
+    bottom: 70px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: rgba(91,138,114,0.9);
+    color: #fff;
+    padding: 8px 20px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    opacity: 0;
+    transition: all 0.3s;
+    pointer-events: none;
+    z-index: 101;
+  }
+
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* Placeholder styling */
+  textarea::placeholder, input::placeholder {
+    color: rgba(138,126,107,0.4);
+    font-style: italic;
+  }
+
+  @media (max-width: 600px) {
+    .anim-grid.cols-2 { grid-template-columns: 1fr; }
+    .anim-grid.cols-4 { grid-template-columns: 1fr; }
+    .choice-row { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Story Planner</h1>
+  <p class="subtitle">11 animations · 5 turns · 2 endings — fill in your story below</p>
+
+  <!-- Mini decision tree for reference -->
+  <div class="tree-wrap">
+    <svg class="tree" id="treeSvg" xmlns="http://www.w3.org/2000/svg"></svg>
+  </div>
+
+  <!-- TURN 1 -->
+  <div class="turn-section">
+    <div class="turn-header">
+      <div class="turn-badge">Turn 1</div>
+      <div class="turn-line"></div>
+      <div class="turn-desc">1 animation · opening scene</div>
+    </div>
+    <div class="anim-grid cols-1">
+      <div class="anim-card">
+        <div class="card-label">
+          <div class="card-number">1</div>
+          <div class="card-path">Opening — everyone sees this</div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Animation / Scene Description</label>
+          <textarea class="story-field-lg" id="a1_story" placeholder="Describe the opening scene... What does the player see? What's happening in the story?"></textarea>
+        </div>
+        <div class="field-group">
+          <label class="field-label choice-label">Player Choice</label>
+          <div class="choice-row">
+            <div class="choice-box">
+              <input type="text" class="choice-field" id="a1_choiceA" placeholder="Choice A → Anim 2">
+              <div class="choice-arrow">→ leads to Animation 2</div>
+            </div>
+            <div class="choice-box">
+              <input type="text" class="choice-field" id="a1_choiceB" placeholder="Choice B → Anim 3">
+              <div class="choice-arrow">→ leads to Animation 3</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TURN 2 -->
+  <div class="turn-section">
+    <div class="turn-header">
+      <div class="turn-badge">Turn 2</div>
+      <div class="turn-line"></div>
+      <div class="turn-desc">2 animations · paths diverge</div>
+    </div>
+    <div class="anim-grid cols-2">
+      <!-- Anim 2 -->
+      <div class="anim-card">
+        <div class="card-label">
+          <div class="card-number">2</div>
+          <div class="card-path">From: Choice A at Anim 1</div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Animation / Scene Description</label>
+          <textarea class="story-field" id="a2_story" placeholder="What happens on this path?"></textarea>
+        </div>
+        <div class="field-group">
+          <label class="field-label choice-label">Player Choice</label>
+          <div class="choice-row">
+            <div class="choice-box">
+              <input type="text" class="choice-field" id="a2_choiceA" placeholder="Choice A → Anim 4">
+              <div class="choice-arrow">→ leads to Animation 4</div>
+            </div>
+            <div class="choice-box">
+              <input type="text" class="choice-field" id="a2_choiceB" placeholder="Choice B → Anim 5">
+              <div class="choice-arrow">→ leads to Animation 5</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Anim 3 -->
+      <div class="anim-card">
+        <div class="card-label">
+          <div class="card-number">3</div>
+          <div class="card-path">From: Choice B at Anim 1</div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Animation / Scene Description</label>
+          <textarea class="story-field" id="a3_story" placeholder="What happens on this path?"></textarea>
+        </div>
+        <div class="field-group">
+          <label class="field-label choice-label">Player Choice</label>
+          <div class="choice-row">
+            <div class="choice-box">
+              <input type="text" class="choice-field" id="a3_choiceA" placeholder="Choice A → Anim 6">
+              <div class="choice-arrow">→ leads to Animation 6</div>
+            </div>
+            <div class="choice-box">
+              <input type="text" class="choice-field" id="a3_choiceB" placeholder="Choice B → Anim 7">
+              <div class="choice-arrow">→ leads to Animation 7</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TURN 3 — peak width -->
+  <div class="turn-section">
+    <div class="turn-header">
+      <div class="turn-badge">Turn 3</div>
+      <div class="turn-line"></div>
+      <div class="turn-desc">4 animations · peak width, then merge</div>
+    </div>
+    <div class="anim-grid cols-4">
+      <!-- Anim 4 -->
+      <div class="anim-card">
+        <div class="card-label">
+          <div class="card-number">4</div>
+          <div class="card-path">From: A2 → Choice A</div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Scene Description</label>
+          <textarea class="story-field" id="a4_story" placeholder="Scene 4..."></textarea>
+        </div>
+        <div class="field-group">
+          <label class="field-label choice-label">Player Choice</label>
+          <div class="choice-row">
+            <div class="choice-box">
+              <input type="text" class="choice-field" id="a4_choiceA" placeholder="Choice A → Anim 8">
+              <div class="choice-arrow">→ Anim 8</div>
+            </div>
+            <div class="choice-box">
+              <input type="text" class="choice-field" id="a4_choiceB" placeholder="Choice B → Anim 9">
+              <div class="choice-arrow">→ Anim 9</div>
+            </div>
+          </div>
+          <div class="merge-note"><div class="merge-dot"></div>Merges into shared Anim 8 or 9</div>
+        </div>
+      </div>
+
+      <!-- Anim 5 -->
+      <div class="anim-card">
+        <div class="card-label">
+          <div class="card-number">5</div>
+          <div class="card-path">From: A2 → Choice B</div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Scene Description</label>
+          <textarea class="story-field" id="a5_story" placeholder="Scene 5..."></textarea>
+        </div>
+        <div class="field-group">
+          <label class="field-label choice-label">Player Choice</label>
+          <div class="choice-row">
+            <div class="choice-box">
+              <input type="text" class="choice-field" id="a5_choiceA" placeholder="Choice A → Anim 8">
+              <div class="choice-arrow">→ Anim 8</div>
+            </div>
+            <div class="choice-box">
+              <input type="text" class="choice-field" id="a5_choiceB" placeholder="Choice B → Anim 9">
+              <div class="choice-arrow">→ Anim 9</div>
+            </div>
+          </div>
+          <div class="merge-note"><div class="merge-dot"></div>Merges into shared Anim 8 or 9</div>
+        </div>
+      </div>
+
+      <!-- Anim 6 -->
+      <div class="anim-card">
+        <div class="card-label">
+          <div class="card-number">6</div>
+          <div class="card-path">From: A3 → Choice A</div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Scene Description</label>
+          <textarea class="story-field" id="a6_story" placeholder="Scene 6..."></textarea>
+        </div>
+        <div class="field-group">
+          <label class="field-label choice-label">Player Choice</label>
+          <div class="choice-row">
+            <div class="choice-box">
+              <input type="text" class="choice-field" id="a6_choiceA" placeholder="Choice A → Anim 8">
+              <div class="choice-arrow">→ Anim 8</div>
+            </div>
+            <div class="choice-box">
+              <input type="text" class="choice-field" id="a6_choiceB" placeholder="Choice B → Anim 9">
+              <div class="choice-arrow">→ Anim 9</div>
+            </div>
+          </div>
+          <div class="merge-note"><div class="merge-dot"></div>Merges into shared Anim 8 or 9</div>
+        </div>
+      </div>
+
+      <!-- Anim 7 -->
+      <div class="anim-card">
+        <div class="card-label">
+          <div class="card-number">7</div>
+          <div class="card-path">From: A3 → Choice B</div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Scene Description</label>
+          <textarea class="story-field" id="a7_story" placeholder="Scene 7..."></textarea>
+        </div>
+        <div class="field-group">
+          <label class="field-label choice-label">Player Choice</label>
+          <div class="choice-row">
+            <div class="choice-box">
+              <input type="text" class="choice-field" id="a7_choiceA" placeholder="Choice A → Anim 8">
+              <div class="choice-arrow">→ Anim 8</div>
+            </div>
+            <div class="choice-box">
+              <input type="text" class="choice-field" id="a7_choiceB" placeholder="Choice B → Anim 9">
+              <div class="choice-arrow">→ Anim 9</div>
+            </div>
+          </div>
+          <div class="merge-note"><div class="merge-dot"></div>Merges into shared Anim 8 or 9</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TURN 4 — merged -->
+  <div class="turn-section">
+    <div class="turn-header">
+      <div class="turn-badge">Turn 4</div>
+      <div class="turn-line"></div>
+      <div class="turn-desc">2 animations · paths have converged</div>
+    </div>
+    <div class="anim-grid cols-2">
+      <!-- Anim 8 -->
+      <div class="anim-card">
+        <div class="card-label">
+          <div class="card-number">8</div>
+          <div class="card-path">Merged path — multiple routes lead here</div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Animation / Scene Description</label>
+          <textarea class="story-field" id="a8_story" placeholder="This scene needs to work regardless of which earlier path the player took..."></textarea>
+        </div>
+        <div class="field-group">
+          <label class="field-label choice-label">Player Choice</label>
+          <div class="choice-row">
+            <div class="choice-box">
+              <input type="text" class="choice-field" id="a8_choiceA" placeholder="Choice A → Anim 10">
+              <div class="choice-arrow">→ leads to Animation 10</div>
+            </div>
+            <div class="choice-box">
+              <input type="text" class="choice-field" id="a8_choiceB" placeholder="Choice B → Anim 11">
+              <div class="choice-arrow">→ leads to Animation 11</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Anim 9 -->
+      <div class="anim-card">
+        <div class="card-label">
+          <div class="card-number">9</div>
+          <div class="card-path">Merged path — multiple routes lead here</div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Animation / Scene Description</label>
+          <textarea class="story-field" id="a9_story" placeholder="This scene needs to work regardless of which earlier path the player took..."></textarea>
+        </div>
+        <div class="field-group">
+          <label class="field-label choice-label">Player Choice</label>
+          <div class="choice-row">
+            <div class="choice-box">
+              <input type="text" class="choice-field" id="a9_choiceA" placeholder="Choice A → Anim 10">
+              <div class="choice-arrow">→ leads to Animation 10</div>
+            </div>
+            <div class="choice-box">
+              <input type="text" class="choice-field" id="a9_choiceB" placeholder="Choice B → Anim 11">
+              <div class="choice-arrow">→ leads to Animation 11</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TURN 5 — final -->
+  <div class="turn-section">
+    <div class="turn-header">
+      <div class="turn-badge">Turn 5</div>
+      <div class="turn-line"></div>
+      <div class="turn-desc">2 animations · final choice determines ending</div>
+    </div>
+    <div class="anim-grid cols-2">
+      <!-- Anim 10 -->
+      <div class="anim-card">
+        <div class="card-label">
+          <div class="card-number">10</div>
+          <div class="card-path">Penultimate scene — path A</div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Animation / Scene Description</label>
+          <textarea class="story-field" id="a10_story" placeholder="The lead-up to the final choice..."></textarea>
+        </div>
+        <div class="field-group">
+          <label class="field-label choice-label">Final Choice</label>
+          <div class="choice-row">
+            <div class="choice-box">
+              <input type="text" class="choice-field" id="a10_choiceA" placeholder="Choice A → Ending A">
+              <div class="choice-arrow">→ leads to Ending A</div>
+            </div>
+            <div class="choice-box">
+              <input type="text" class="choice-field" id="a10_choiceB" placeholder="Choice B → Ending B">
+              <div class="choice-arrow">→ leads to Ending B</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Anim 11 -->
+      <div class="anim-card">
+        <div class="card-label">
+          <div class="card-number">11</div>
+          <div class="card-path">Penultimate scene — path B</div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Animation / Scene Description</label>
+          <textarea class="story-field" id="a11_story" placeholder="The lead-up to the final choice..."></textarea>
+        </div>
+        <div class="field-group">
+          <label class="field-label choice-label">Final Choice</label>
+          <div class="choice-row">
+            <div class="choice-box">
+              <input type="text" class="choice-field" id="a11_choiceA" placeholder="Choice A → Ending A">
+              <div class="choice-arrow">→ leads to Ending A</div>
+            </div>
+            <div class="choice-box">
+              <input type="text" class="choice-field" id="a11_choiceB" placeholder="Choice B → Ending B">
+              <div class="choice-arrow">→ leads to Ending B</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ENDINGS -->
+  <div class="turn-section">
+    <div class="turn-header">
+      <div class="turn-badge ending">Endings</div>
+      <div class="turn-line" style="background: var(--red-dim);"></div>
+      <div class="turn-desc">2 possible endings</div>
+    </div>
+    <div class="anim-grid cols-2">
+      <!-- Ending A -->
+      <div class="anim-card ending-card">
+        <div class="card-label">
+          <div class="card-number ending-num">ENDING A</div>
+        </div>
+        <div class="field-group">
+          <label class="field-label ending-label">Ending Scene Description</label>
+          <textarea class="story-field-lg" id="endA_story" placeholder="How does this ending play out? What's the final moment the player sees?"></textarea>
+        </div>
+        <div class="field-group">
+          <label class="field-label ending-label">Closing Message</label>
+          <input type="text" id="endA_message" placeholder="Final text shown to the player..." style="border-color: var(--red-dim);">
+        </div>
+      </div>
+
+      <!-- Ending B -->
+      <div class="anim-card ending-card">
+        <div class="card-label">
+          <div class="card-number ending-num">ENDING B</div>
+        </div>
+        <div class="field-group">
+          <label class="field-label ending-label">Ending Scene Description</label>
+          <textarea class="story-field-lg" id="endB_story" placeholder="How does this ending play out? What's the final moment the player sees?"></textarea>
+        </div>
+        <div class="field-group">
+          <label class="field-label ending-label">Closing Message</label>
+          <input type="text" id="endB_message" placeholder="Final text shown to the player..." style="border-color: var(--red-dim);">
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Save bar -->
+<div class="save-bar">
+  <button class="btn btn-gold" onclick="saveData()">Save Progress</button>
+  <button class="btn btn-outline" onclick="exportData()">Export as JSON</button>
+  <button class="btn btn-outline" onclick="clearData()">Clear All</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Mini tree SVG -->
+<script>
+(function() {
+  const svg = document.getElementById('treeSvg');
+  const ns = 'http://www.w3.org/2000/svg';
+
+  const W = 580;
+  const levelGap = 52;
+  const nodeR = 7;
+  const endR = 8;
+  const topPad = 24;
+  const turnLabelW = 36;
+  const totalW = W + turnLabelW + 16;
+  const totalH = 6 * levelGap + 46;
+  const ox = turnLabelW + 8;
+
+  svg.setAttribute('width', totalW);
+  svg.setAttribute('height', totalH);
+  svg.setAttribute('viewBox', `0 0 ${totalW} ${totalH}`);
+
+  function nx(f) { return ox + W * f; }
+  function ny(t) { return topPad + t * levelGap; }
+
+  const nodes = {
+    'T1_1': { x: nx(0.5), y: ny(0) },
+    'T2_1': { x: nx(0.25), y: ny(1) },
+    'T2_2': { x: nx(0.75), y: ny(1) },
+    'T3_1': { x: nx(0.1),  y: ny(2) },
+    'T3_2': { x: nx(0.35), y: ny(2) },
+    'T3_3': { x: nx(0.65), y: ny(2) },
+    'T3_4': { x: nx(0.9),  y: ny(2) },
+    'T4_1': { x: nx(0.25), y: ny(3) },
+    'T4_2': { x: nx(0.75), y: ny(3) },
+    'T5_1': { x: nx(0.25), y: ny(4) },
+    'T5_2': { x: nx(0.75), y: ny(4) },
+  };
+
+  const endings = {
+    'E1': { x: nx(0.25), y: ny(5) + 6 },
+    'E2': { x: nx(0.75), y: ny(5) + 6 },
+  };
+
+  const edges = [
+    ['T1_1','T2_1',false],['T1_1','T2_2',false],
+    ['T2_1','T3_1',false],['T2_1','T3_2',false],['T2_2','T3_3',false],['T2_2','T3_4',false],
+    ['T3_1','T4_1',false],['T3_1','T4_2',true],['T3_2','T4_1',false],['T3_2','T4_2',true],
+    ['T3_3','T4_1',true],['T3_3','T4_2',false],['T3_4','T4_1',true],['T3_4','T4_2',false],
+    ['T4_1','T5_1',false],['T4_1','T5_2',true],['T4_2','T5_1',true],['T4_2','T5_2',false],
+    ['T5_1','E1',false],['T5_2','E2',false],
+  ];
+
+  const eg = document.createElementNS(ns, 'g');
+  edges.forEach(([f,t,m]) => {
+    const from = nodes[f]||endings[f], to = nodes[t]||endings[t];
+    const p = document.createElementNS(ns, 'path');
+    const my = (from.y+to.y)/2;
+    p.setAttribute('d',`M ${from.x} ${from.y+nodeR} C ${from.x} ${my}, ${to.x} ${my}, ${to.x} ${to.y-nodeR}`);
+    p.setAttribute('fill','none');
+    if(t.startsWith('E')){p.setAttribute('stroke','rgba(180,60,60,0.3)');p.setAttribute('stroke-width','1.5');}
+    else if(m){p.setAttribute('stroke','rgba(91,138,114,0.3)');p.setAttribute('stroke-width','1');p.setAttribute('stroke-dasharray','5 3');}
+    else{p.setAttribute('stroke','rgba(201,168,76,0.2)');p.setAttribute('stroke-width','1.3');}
+    eg.appendChild(p);
+  });
+  svg.appendChild(eg);
+
+  const ng = document.createElementNS(ns, 'g');
+  const animNums = {'T1_1':'1','T2_1':'2','T2_2':'3','T3_1':'4','T3_2':'5','T3_3':'6','T3_4':'7','T4_1':'8','T4_2':'9','T5_1':'10','T5_2':'11'};
+
+  Object.entries(nodes).forEach(([id,n]) => {
+    const c = document.createElementNS(ns,'circle');
+    c.setAttribute('cx',n.x);c.setAttribute('cy',n.y);c.setAttribute('r',nodeR);c.setAttribute('fill','#c9a84c');
+    ng.appendChild(c);
+    const l = document.createElementNS(ns,'text');
+    l.setAttribute('x',n.x);l.setAttribute('y',n.y+2.5);l.setAttribute('text-anchor','middle');
+    l.setAttribute('fill','#0a0a0f');l.setAttribute('font-family','Cinzel,serif');l.setAttribute('font-size','6');l.setAttribute('font-weight','900');
+    l.textContent=animNums[id]||'';ng.appendChild(l);
+  });
+
+  Object.entries(endings).forEach(([id,e]) => {
+    const c = document.createElementNS(ns,'circle');
+    c.setAttribute('cx',e.x);c.setAttribute('cy',e.y);c.setAttribute('r',endR);c.setAttribute('fill','#b43c3c');
+    ng.appendChild(c);
+    const l = document.createElementNS(ns,'text');
+    l.setAttribute('x',e.x);l.setAttribute('y',e.y+endR+13);l.setAttribute('text-anchor','middle');
+    l.setAttribute('fill','#b43c3c');l.setAttribute('font-family','Cinzel,serif');l.setAttribute('font-size','8');l.setAttribute('font-weight','700');
+    l.textContent=id==='E1'?'END A':'END B';ng.appendChild(l);
+  });
+  svg.appendChild(ng);
+
+  // Turn labels
+  const lg = document.createElementNS(ns,'g');
+  [1,2,4,2,2].forEach((cnt,i) => {
+    const y=ny(i);
+    const t=document.createElementNS(ns,'text');
+    t.setAttribute('x',4);t.setAttribute('y',y+3);t.setAttribute('fill','#c9a84c');
+    t.setAttribute('font-family','Cinzel,serif');t.setAttribute('font-size','9');t.setAttribute('font-weight','700');
+    t.textContent=`T${i+1}`;lg.appendChild(t);
+  });
+  const el=document.createElementNS(ns,'text');
+  el.setAttribute('x',4);el.setAttribute('y',ny(5)+10);el.setAttribute('fill','#b43c3c');
+  el.setAttribute('font-family','Cinzel,serif');el.setAttribute('font-size','9');el.setAttribute('font-weight','700');
+  el.textContent='END';lg.appendChild(el);
+  svg.appendChild(lg);
+
+  // Merge label
+  const ml=document.createElementNS(ns,'text');
+  ml.setAttribute('x',nx(0.5));ml.setAttribute('y',(ny(2)+ny(3))/2+3);ml.setAttribute('text-anchor','middle');
+  ml.setAttribute('fill','#5b8a72');ml.setAttribute('font-family','Crimson Text,serif');ml.setAttribute('font-size','9');ml.setAttribute('font-style','italic');
+  ml.textContent='◆ merge';svg.appendChild(ml);
+})();
+</script>
+
+<!-- Save / Load / Export -->
+<script>
+  const ALL_FIELDS = [
+    'a1_story','a1_choiceA','a1_choiceB',
+    'a2_story','a2_choiceA','a2_choiceB',
+    'a3_story','a3_choiceA','a3_choiceB',
+    'a4_story','a4_choiceA','a4_choiceB',
+    'a5_story','a5_choiceA','a5_choiceB',
+    'a6_story','a6_choiceA','a6_choiceB',
+    'a7_story','a7_choiceA','a7_choiceB',
+    'a8_story','a8_choiceA','a8_choiceB',
+    'a9_story','a9_choiceA','a9_choiceB',
+    'a10_story','a10_choiceA','a10_choiceB',
+    'a11_story','a11_choiceA','a11_choiceB',
+    'endA_story','endA_message',
+    'endB_story','endB_message',
+  ];
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2000);
+  }
+
+  function gatherData() {
+    const data = {};
+    ALL_FIELDS.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) data[id] = el.value;
+    });
+    return data;
+  }
+
+  function loadData(data) {
+    ALL_FIELDS.forEach(id => {
+      const el = document.getElementById(id);
+      if (el && data[id] !== undefined) el.value = data[id];
+    });
+  }
+
+  async function saveToServer(silent) {
+    try {
+      const resp = await fetch('/api/data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(gatherData(), null, 2),
+      });
+      if (!resp.ok) throw new Error('Server error');
+      if (!silent) showToast('Progress saved!');
+    } catch(e) {
+      if (!silent) showToast('Save failed — server may be down');
+    }
+  }
+
+  function saveData() {
+    saveToServer(false);
+  }
+
+  function exportData() {
+    const blob = new Blob([JSON.stringify(gatherData(), null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'story_planner.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('Exported as JSON!');
+  }
+
+  function clearData() {
+    if (confirm('Clear all fields? This cannot be undone.')) {
+      ALL_FIELDS.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+      });
+      saveToServer(true);
+      showToast('All fields cleared');
+    }
+  }
+
+  // Auto-load from server on startup
+  (async function() {
+    try {
+      const resp = await fetch('/api/data');
+      if (resp.ok) {
+        const data = await resp.json();
+        if (Object.keys(data).length > 0) loadData(data);
+      }
+    } catch(e) {}
+  })();
+
+  // Auto-save every 30 seconds
+  setInterval(() => { saveToServer(true); }, 30000);
+</script>
+
+</body>
+</html>
