@@ -195,6 +195,13 @@
 
     <h2>Fields</h2>
     <div id="fields-list"></div>
+
+    <h2>Data Export / Import</h2>
+    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+      <button class="btn" onclick="exportJSON()">Export as JSON</button>
+      <button class="btn" onclick="document.getElementById('importFile').click()">Import JSON</button>
+      <input type="file" id="importFile" accept=".json" style="display:none" onchange="importJSON(event)">
+    </div>
   </div>
 </div>
 
@@ -369,6 +376,48 @@ async function clearField(fieldId) {
   });
   if (r.ok) await loadData();
   else alert('Failed to clear field');
+}
+
+// --- Export / Import ---
+function exportJSON() {
+  if (!appData) return;
+  const blob = new Blob([JSON.stringify(appData, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'story_planner_data.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+async function importJSON(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  if (!confirm('This will overwrite ALL current data. Are you sure?')) {
+    event.target.value = '';
+    return;
+  }
+  try {
+    const text = await file.text();
+    const imported = JSON.parse(text);
+    if (!imported.users || !imported.fields) {
+      alert('Invalid format: missing users or fields');
+      return;
+    }
+    // Overwrite each field via admin API
+    for (const [fieldId, segments] of Object.entries(imported.fields)) {
+      await fetch(API + '/api/admin/fields', {
+        method: 'PUT',
+        headers: authHeaders(),
+        body: JSON.stringify({ fieldId, segments: segments || [] }),
+      });
+    }
+    await loadData();
+    alert('Import complete');
+  } catch (e) {
+    alert('Import failed: ' + e.message);
+  }
+  event.target.value = '';
 }
 
 // --- Helpers ---

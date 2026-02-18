@@ -1063,7 +1063,6 @@
 <!-- Save bar -->
 <div class="save-bar">
   <button class="btn btn-gold" onclick="saveAllFields()">Save Progress</button>
-  <button class="btn btn-outline" onclick="exportData()">Export as JSON</button>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -1671,8 +1670,9 @@
 
     // Collect current state from all editors
     const editors = document.querySelectorAll('.collab-editor');
-    let errors = 0;
+    let conflictFields = [];
     let saved = 0;
+    let netErrors = 0;
 
     for (const editor of editors) {
       const fieldId = editor.dataset.field;
@@ -1697,18 +1697,25 @@
           serverData.fields[fieldId] = segments;
           serverData.version = result.version;
           saved++;
+        } else if (resp.status === 409) {
+          // Someone else edited this field — re-fetch to get their changes
+          const label = fieldId.replace(/_/g, ' ');
+          conflictFields.push(label);
+          await fetchFullData();
         } else {
           const err = await resp.json();
           console.error(`Save error for ${fieldId}:`, err.error);
-          errors++;
+          netErrors++;
         }
       } catch (e) {
-        errors++;
+        netErrors++;
       }
     }
 
-    if (errors > 0) {
-      showToast(`Saved with ${errors} error(s) — some fields may have conflicts`, true);
+    if (conflictFields.length > 0) {
+      showToast(`Conflict in: ${conflictFields.join(', ')} — someone else edited. Your changes were refreshed, please re-enter.`, true);
+    } else if (netErrors > 0) {
+      showToast(`Saved with ${netErrors} error(s) — check your connection`, true);
     } else if (saved > 0) {
       showToast('Progress saved!');
     } else {
@@ -1717,26 +1724,6 @@
   }
   // Expose globally for the onclick handler
   window.saveAllFields = saveAllFields;
-
-  // === Export ===
-  function exportData() {
-    // Export as flat text for simplicity
-    const out = {};
-    const editors = document.querySelectorAll('.collab-editor');
-    editors.forEach(ed => {
-      const segs = getEditorSegments(ed);
-      out[ed.dataset.field] = segs.map(s => s.text).join('');
-    });
-    const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'story_planner.json';
-    a.click();
-    URL.revokeObjectURL(url);
-    showToast('Exported as JSON!');
-  }
-  window.exportData = exportData;
 
   // === Sync / Polling ===
   async function fetchFullData() {
@@ -1796,8 +1783,18 @@
     // Initial data load
     fetchFullData();
 
-    // Poll every 5 seconds
+    // Poll every 5 seconds, pause when tab is hidden
     pollTimer = setInterval(pollVersion, 5000);
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        clearInterval(pollTimer);
+        pollTimer = null;
+      } else {
+        pollVersion(); // immediate check on return
+        pollTimer = setInterval(pollVersion, 5000);
+      }
+    });
   }
 
   // === Init ===
