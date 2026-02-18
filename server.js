@@ -5,6 +5,7 @@ const path = require('path');
 const PORT = process.env.PORT || 3000;
 const DATA_DIR = process.env.DATA_DIR || __dirname;
 const SAVE_FILE = path.join(DATA_DIR, 'story_planner_data.json');
+const SITE_PASSWORD = process.env.SITE_PASSWORD || 'kelsey2026';
 
 // --- Data helpers ---
 
@@ -59,6 +60,12 @@ function sendJSON(res, status, obj) {
   res.end(JSON.stringify(obj));
 }
 
+function checkAuth(req) {
+  const auth = req.headers['authorization'] || '';
+  const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
+  return token === SITE_PASSWORD;
+}
+
 // --- Server ---
 
 const server = http.createServer(async (req, res) => {
@@ -67,7 +74,7 @@ const server = http.createServer(async (req, res) => {
     res.writeHead(204, {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     });
     res.end();
     return;
@@ -79,6 +86,29 @@ const server = http.createServer(async (req, res) => {
     res.writeHead(200, { 'Content-Type': 'text/html' });
     res.end(html);
     return;
+  }
+
+  // POST /api/auth — verify password
+  if (req.method === 'POST' && req.url === '/api/auth') {
+    try {
+      const { password } = await parseBody(req);
+      if (password === SITE_PASSWORD) {
+        sendJSON(res, 200, { ok: true });
+      } else {
+        sendJSON(res, 401, { error: 'Wrong password' });
+      }
+    } catch (e) {
+      sendJSON(res, 400, { error: 'Invalid JSON' });
+    }
+    return;
+  }
+
+  // Auth check for all other API routes
+  if (req.url.startsWith('/api/')) {
+    if (!checkAuth(req)) {
+      sendJSON(res, 401, { error: 'Unauthorized' });
+      return;
+    }
   }
 
   // GET /api/data — return full data
@@ -128,7 +158,7 @@ const server = http.createServer(async (req, res) => {
       // Validate: no other user's text was deleted
       const existing = data.fields[fieldId] || [];
       for (const oldSeg of existing) {
-        if (oldSeg.userId !== userId) {
+        if (oldSeg.userId !== userId && oldSeg.userId !== 'system') {
           // Find this segment's text somewhere in the new segments
           const found = segments.some(
             s => s.userId === oldSeg.userId && s.text === oldSeg.text
