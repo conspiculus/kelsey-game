@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Story Planner — Decision Tree Worksheet</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
@@ -55,7 +55,38 @@
     font-size: 1rem;
     color: var(--text-dim);
     font-style: italic;
-    margin-bottom: 32px;
+    margin-bottom: 16px;
+  }
+
+  /* User panel */
+  .user-panel {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 24px;
+    padding: 10px 16px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+
+  .user-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.82rem;
+    color: var(--text-mid);
+    padding: 4px 10px;
+    border-radius: 20px;
+    background: rgba(255,255,255,0.03);
+  }
+
+  .user-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
   }
 
   /* Mini tree */
@@ -229,7 +260,8 @@
     color: var(--red);
   }
 
-  textarea, input[type="text"] {
+  /* Collaborative editor fields */
+  .collab-editor {
     width: 100%;
     background: rgba(255,255,255,0.03);
     border: 1px solid var(--border);
@@ -239,34 +271,65 @@
     font-size: 0.95rem;
     line-height: 1.55;
     padding: 10px 12px;
-    resize: vertical;
+    min-height: 44px;
     transition: border-color 0.3s, background 0.3s;
+    outline: none;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
   }
 
-  textarea:focus, input[type="text"]:focus {
-    outline: none;
+  .collab-editor:focus {
     border-color: rgba(201,168,76,0.35);
     background: rgba(255,255,255,0.05);
   }
 
-  .ending-card textarea:focus, .ending-card input[type="text"]:focus {
-    border-color: rgba(180,60,60,0.35);
-  }
-
-  textarea.story-field {
+  .collab-editor.story-field {
     min-height: 80px;
   }
 
-  textarea.story-field-lg {
+  .collab-editor.story-field-lg {
     min-height: 110px;
   }
 
-  input.choice-field {
+  .collab-editor.choice-field {
     border-color: rgba(91,138,114,0.2);
+    min-height: 44px;
   }
 
-  input.choice-field:focus {
+  .collab-editor.choice-field:focus {
     border-color: rgba(91,138,114,0.45);
+  }
+
+  .ending-card .collab-editor:focus {
+    border-color: rgba(180,60,60,0.35);
+  }
+
+  .collab-editor:empty::before {
+    content: attr(data-placeholder);
+    color: rgba(138,126,107,0.4);
+    font-style: italic;
+    pointer-events: none;
+  }
+
+  /* Segment spans inside editors */
+  .collab-editor .seg {
+    border-radius: 2px;
+  }
+
+  .collab-editor .seg-other {
+    cursor: default;
+    opacity: 0.95;
+  }
+
+  .collab-editor .seg-mine {
+    outline: none;
+  }
+
+  .collab-editor .seg-gap {
+    outline: none;
+    min-width: 2px;
+    display: inline;
   }
 
   .choice-row {
@@ -377,24 +440,200 @@
     transform: translateX(-50%) translateY(0);
   }
 
-  /* Placeholder styling */
-  textarea::placeholder, input::placeholder {
-    color: rgba(138,126,107,0.4);
+  .toast.error {
+    background: rgba(180,60,60,0.9);
+  }
+
+  /* Registration modal */
+  .modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  .modal-overlay.hidden { display: none; }
+
+  .modal {
+    background: var(--bg-card);
+    border: 1px solid var(--gold-dim);
+    border-radius: 14px;
+    padding: 32px 28px;
+    max-width: 420px;
+    width: 100%;
+    text-align: center;
+  }
+
+  .modal h2 {
+    font-family: 'Cinzel', serif;
+    font-weight: 900;
+    color: var(--gold);
+    font-size: 1.3rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .modal p {
+    font-size: 0.92rem;
+    color: var(--text-mid);
+    line-height: 1.6;
+    margin-bottom: 20px;
+  }
+
+  .modal-field {
+    width: 100%;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'Crimson Text', Georgia, serif;
+    font-size: 1.1rem;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    outline: none;
+    text-align: center;
+  }
+
+  .modal-field:focus {
+    border-color: var(--gold);
+  }
+
+  .modal-field::placeholder {
+    color: rgba(138,126,107,0.5);
     font-style: italic;
+  }
+
+  .color-label {
+    font-family: 'Cinzel', serif;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 12px;
+    display: block;
+  }
+
+  .color-swatches {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .swatch {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 3px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+  }
+
+  .swatch:hover {
+    transform: scale(1.1);
+  }
+
+  .swatch.selected {
+    border-color: #fff;
+    box-shadow: 0 0 12px rgba(255,255,255,0.3);
+  }
+
+  .modal-btn {
+    font-family: 'Cinzel', serif;
+    font-weight: 700;
+    font-size: 0.9rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 14px 40px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    background: var(--gold);
+    color: var(--bg);
+    transition: all 0.2s;
+    min-height: 48px;
+  }
+
+  .modal-btn:hover {
+    background: #d4b55a;
+    box-shadow: 0 0 20px rgba(201,168,76,0.3);
+  }
+
+  .modal-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  /* Sync indicator */
+  .sync-indicator {
+    position: fixed;
+    top: 12px;
+    right: 12px;
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    font-family: 'Cinzel', serif;
+    letter-spacing: 0.05em;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .sync-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+  }
+
+  .sync-dot.stale {
+    background: var(--red);
   }
 
   @media (max-width: 600px) {
     .anim-grid.cols-2 { grid-template-columns: 1fr; }
     .anim-grid.cols-4 { grid-template-columns: 1fr; }
     .choice-row { grid-template-columns: 1fr; }
+    .save-bar { gap: 8px; padding: 20px 12px 16px; }
+    .btn { padding: 12px 16px; font-size: 0.72rem; }
+    .container { padding: 24px 12px 80px; }
   }
 </style>
 </head>
 <body>
 
+<!-- Registration Modal -->
+<div class="modal-overlay" id="regModal">
+  <div class="modal">
+    <h2>Welcome, Collaborator!</h2>
+    <p>This is a collaborative story planner for Kelsey's birthday game. Multiple people can contribute — your text will appear in the color you pick below. You can add to the story but can't delete anyone else's writing.</p>
+    <input type="text" class="modal-field" id="regName" placeholder="Enter your name" maxlength="30" autocomplete="off">
+    <label class="color-label">Pick Your Color</label>
+    <div class="color-swatches" id="colorSwatches"></div>
+    <button class="modal-btn" id="regSubmit" disabled>Join</button>
+  </div>
+</div>
+
+<!-- Sync indicator -->
+<div class="sync-indicator">
+  <div class="sync-dot" id="syncDot"></div>
+  <span id="syncLabel">Connected</span>
+</div>
+
 <div class="container">
   <h1>Story Planner</h1>
-  <p class="subtitle">11 animations · 5 turns · 2 endings — fill in your story below</p>
+  <p class="subtitle">11 animations · 5 turns · 2 endings — collaborate on your story below</p>
+
+  <!-- User panel -->
+  <div class="user-panel" id="userPanel"></div>
 
   <!-- Mini decision tree for reference -->
   <div class="tree-wrap">
@@ -416,17 +655,17 @@
         </div>
         <div class="field-group">
           <label class="field-label">Animation / Scene Description</label>
-          <textarea class="story-field-lg" id="a1_story" placeholder="Describe the opening scene... What does the player see? What's happening in the story?"></textarea>
+          <div class="collab-editor story-field-lg" data-field="a1_story" data-placeholder="Describe the opening scene... What does the player see? What's happening in the story?"></div>
         </div>
         <div class="field-group">
           <label class="field-label choice-label">Player Choice</label>
           <div class="choice-row">
             <div class="choice-box">
-              <input type="text" class="choice-field" id="a1_choiceA" placeholder="Choice A → Anim 2">
+              <div class="collab-editor choice-field" data-field="a1_choiceA" data-placeholder="Choice A → Anim 2"></div>
               <div class="choice-arrow">→ leads to Animation 2</div>
             </div>
             <div class="choice-box">
-              <input type="text" class="choice-field" id="a1_choiceB" placeholder="Choice B → Anim 3">
+              <div class="collab-editor choice-field" data-field="a1_choiceB" data-placeholder="Choice B → Anim 3"></div>
               <div class="choice-arrow">→ leads to Animation 3</div>
             </div>
           </div>
@@ -443,7 +682,6 @@
       <div class="turn-desc">2 animations · paths diverge</div>
     </div>
     <div class="anim-grid cols-2">
-      <!-- Anim 2 -->
       <div class="anim-card">
         <div class="card-label">
           <div class="card-number">2</div>
@@ -451,24 +689,23 @@
         </div>
         <div class="field-group">
           <label class="field-label">Animation / Scene Description</label>
-          <textarea class="story-field" id="a2_story" placeholder="What happens on this path?"></textarea>
+          <div class="collab-editor story-field" data-field="a2_story" data-placeholder="What happens on this path?"></div>
         </div>
         <div class="field-group">
           <label class="field-label choice-label">Player Choice</label>
           <div class="choice-row">
             <div class="choice-box">
-              <input type="text" class="choice-field" id="a2_choiceA" placeholder="Choice A → Anim 4">
+              <div class="collab-editor choice-field" data-field="a2_choiceA" data-placeholder="Choice A → Anim 4"></div>
               <div class="choice-arrow">→ leads to Animation 4</div>
             </div>
             <div class="choice-box">
-              <input type="text" class="choice-field" id="a2_choiceB" placeholder="Choice B → Anim 5">
+              <div class="collab-editor choice-field" data-field="a2_choiceB" data-placeholder="Choice B → Anim 5"></div>
               <div class="choice-arrow">→ leads to Animation 5</div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Anim 3 -->
       <div class="anim-card">
         <div class="card-label">
           <div class="card-number">3</div>
@@ -476,17 +713,17 @@
         </div>
         <div class="field-group">
           <label class="field-label">Animation / Scene Description</label>
-          <textarea class="story-field" id="a3_story" placeholder="What happens on this path?"></textarea>
+          <div class="collab-editor story-field" data-field="a3_story" data-placeholder="What happens on this path?"></div>
         </div>
         <div class="field-group">
           <label class="field-label choice-label">Player Choice</label>
           <div class="choice-row">
             <div class="choice-box">
-              <input type="text" class="choice-field" id="a3_choiceA" placeholder="Choice A → Anim 6">
+              <div class="collab-editor choice-field" data-field="a3_choiceA" data-placeholder="Choice A → Anim 6"></div>
               <div class="choice-arrow">→ leads to Animation 6</div>
             </div>
             <div class="choice-box">
-              <input type="text" class="choice-field" id="a3_choiceB" placeholder="Choice B → Anim 7">
+              <div class="collab-editor choice-field" data-field="a3_choiceB" data-placeholder="Choice B → Anim 7"></div>
               <div class="choice-arrow">→ leads to Animation 7</div>
             </div>
           </div>
@@ -503,7 +740,6 @@
       <div class="turn-desc">4 animations · peak width, then merge</div>
     </div>
     <div class="anim-grid cols-4">
-      <!-- Anim 4 -->
       <div class="anim-card">
         <div class="card-label">
           <div class="card-number">4</div>
@@ -511,17 +747,17 @@
         </div>
         <div class="field-group">
           <label class="field-label">Scene Description</label>
-          <textarea class="story-field" id="a4_story" placeholder="Scene 4..."></textarea>
+          <div class="collab-editor story-field" data-field="a4_story" data-placeholder="Scene 4..."></div>
         </div>
         <div class="field-group">
           <label class="field-label choice-label">Player Choice</label>
           <div class="choice-row">
             <div class="choice-box">
-              <input type="text" class="choice-field" id="a4_choiceA" placeholder="Choice A → Anim 8">
+              <div class="collab-editor choice-field" data-field="a4_choiceA" data-placeholder="Choice A → Anim 8"></div>
               <div class="choice-arrow">→ Anim 8</div>
             </div>
             <div class="choice-box">
-              <input type="text" class="choice-field" id="a4_choiceB" placeholder="Choice B → Anim 9">
+              <div class="collab-editor choice-field" data-field="a4_choiceB" data-placeholder="Choice B → Anim 9"></div>
               <div class="choice-arrow">→ Anim 9</div>
             </div>
           </div>
@@ -529,7 +765,6 @@
         </div>
       </div>
 
-      <!-- Anim 5 -->
       <div class="anim-card">
         <div class="card-label">
           <div class="card-number">5</div>
@@ -537,17 +772,17 @@
         </div>
         <div class="field-group">
           <label class="field-label">Scene Description</label>
-          <textarea class="story-field" id="a5_story" placeholder="Scene 5..."></textarea>
+          <div class="collab-editor story-field" data-field="a5_story" data-placeholder="Scene 5..."></div>
         </div>
         <div class="field-group">
           <label class="field-label choice-label">Player Choice</label>
           <div class="choice-row">
             <div class="choice-box">
-              <input type="text" class="choice-field" id="a5_choiceA" placeholder="Choice A → Anim 8">
+              <div class="collab-editor choice-field" data-field="a5_choiceA" data-placeholder="Choice A → Anim 8"></div>
               <div class="choice-arrow">→ Anim 8</div>
             </div>
             <div class="choice-box">
-              <input type="text" class="choice-field" id="a5_choiceB" placeholder="Choice B → Anim 9">
+              <div class="collab-editor choice-field" data-field="a5_choiceB" data-placeholder="Choice B → Anim 9"></div>
               <div class="choice-arrow">→ Anim 9</div>
             </div>
           </div>
@@ -555,7 +790,6 @@
         </div>
       </div>
 
-      <!-- Anim 6 -->
       <div class="anim-card">
         <div class="card-label">
           <div class="card-number">6</div>
@@ -563,17 +797,17 @@
         </div>
         <div class="field-group">
           <label class="field-label">Scene Description</label>
-          <textarea class="story-field" id="a6_story" placeholder="Scene 6..."></textarea>
+          <div class="collab-editor story-field" data-field="a6_story" data-placeholder="Scene 6..."></div>
         </div>
         <div class="field-group">
           <label class="field-label choice-label">Player Choice</label>
           <div class="choice-row">
             <div class="choice-box">
-              <input type="text" class="choice-field" id="a6_choiceA" placeholder="Choice A → Anim 8">
+              <div class="collab-editor choice-field" data-field="a6_choiceA" data-placeholder="Choice A → Anim 8"></div>
               <div class="choice-arrow">→ Anim 8</div>
             </div>
             <div class="choice-box">
-              <input type="text" class="choice-field" id="a6_choiceB" placeholder="Choice B → Anim 9">
+              <div class="collab-editor choice-field" data-field="a6_choiceB" data-placeholder="Choice B → Anim 9"></div>
               <div class="choice-arrow">→ Anim 9</div>
             </div>
           </div>
@@ -581,7 +815,6 @@
         </div>
       </div>
 
-      <!-- Anim 7 -->
       <div class="anim-card">
         <div class="card-label">
           <div class="card-number">7</div>
@@ -589,17 +822,17 @@
         </div>
         <div class="field-group">
           <label class="field-label">Scene Description</label>
-          <textarea class="story-field" id="a7_story" placeholder="Scene 7..."></textarea>
+          <div class="collab-editor story-field" data-field="a7_story" data-placeholder="Scene 7..."></div>
         </div>
         <div class="field-group">
           <label class="field-label choice-label">Player Choice</label>
           <div class="choice-row">
             <div class="choice-box">
-              <input type="text" class="choice-field" id="a7_choiceA" placeholder="Choice A → Anim 8">
+              <div class="collab-editor choice-field" data-field="a7_choiceA" data-placeholder="Choice A → Anim 8"></div>
               <div class="choice-arrow">→ Anim 8</div>
             </div>
             <div class="choice-box">
-              <input type="text" class="choice-field" id="a7_choiceB" placeholder="Choice B → Anim 9">
+              <div class="collab-editor choice-field" data-field="a7_choiceB" data-placeholder="Choice B → Anim 9"></div>
               <div class="choice-arrow">→ Anim 9</div>
             </div>
           </div>
@@ -617,7 +850,6 @@
       <div class="turn-desc">2 animations · paths have converged</div>
     </div>
     <div class="anim-grid cols-2">
-      <!-- Anim 8 -->
       <div class="anim-card">
         <div class="card-label">
           <div class="card-number">8</div>
@@ -625,24 +857,23 @@
         </div>
         <div class="field-group">
           <label class="field-label">Animation / Scene Description</label>
-          <textarea class="story-field" id="a8_story" placeholder="This scene needs to work regardless of which earlier path the player took..."></textarea>
+          <div class="collab-editor story-field" data-field="a8_story" data-placeholder="This scene needs to work regardless of which earlier path the player took..."></div>
         </div>
         <div class="field-group">
           <label class="field-label choice-label">Player Choice</label>
           <div class="choice-row">
             <div class="choice-box">
-              <input type="text" class="choice-field" id="a8_choiceA" placeholder="Choice A → Anim 10">
+              <div class="collab-editor choice-field" data-field="a8_choiceA" data-placeholder="Choice A → Anim 10"></div>
               <div class="choice-arrow">→ leads to Animation 10</div>
             </div>
             <div class="choice-box">
-              <input type="text" class="choice-field" id="a8_choiceB" placeholder="Choice B → Anim 11">
+              <div class="collab-editor choice-field" data-field="a8_choiceB" data-placeholder="Choice B → Anim 11"></div>
               <div class="choice-arrow">→ leads to Animation 11</div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Anim 9 -->
       <div class="anim-card">
         <div class="card-label">
           <div class="card-number">9</div>
@@ -650,17 +881,17 @@
         </div>
         <div class="field-group">
           <label class="field-label">Animation / Scene Description</label>
-          <textarea class="story-field" id="a9_story" placeholder="This scene needs to work regardless of which earlier path the player took..."></textarea>
+          <div class="collab-editor story-field" data-field="a9_story" data-placeholder="This scene needs to work regardless of which earlier path the player took..."></div>
         </div>
         <div class="field-group">
           <label class="field-label choice-label">Player Choice</label>
           <div class="choice-row">
             <div class="choice-box">
-              <input type="text" class="choice-field" id="a9_choiceA" placeholder="Choice A → Anim 10">
+              <div class="collab-editor choice-field" data-field="a9_choiceA" data-placeholder="Choice A → Anim 10"></div>
               <div class="choice-arrow">→ leads to Animation 10</div>
             </div>
             <div class="choice-box">
-              <input type="text" class="choice-field" id="a9_choiceB" placeholder="Choice B → Anim 11">
+              <div class="collab-editor choice-field" data-field="a9_choiceB" data-placeholder="Choice B → Anim 11"></div>
               <div class="choice-arrow">→ leads to Animation 11</div>
             </div>
           </div>
@@ -677,7 +908,6 @@
       <div class="turn-desc">2 animations · final choice determines ending</div>
     </div>
     <div class="anim-grid cols-2">
-      <!-- Anim 10 -->
       <div class="anim-card">
         <div class="card-label">
           <div class="card-number">10</div>
@@ -685,24 +915,23 @@
         </div>
         <div class="field-group">
           <label class="field-label">Animation / Scene Description</label>
-          <textarea class="story-field" id="a10_story" placeholder="The lead-up to the final choice..."></textarea>
+          <div class="collab-editor story-field" data-field="a10_story" data-placeholder="The lead-up to the final choice..."></div>
         </div>
         <div class="field-group">
           <label class="field-label choice-label">Final Choice</label>
           <div class="choice-row">
             <div class="choice-box">
-              <input type="text" class="choice-field" id="a10_choiceA" placeholder="Choice A → Ending A">
+              <div class="collab-editor choice-field" data-field="a10_choiceA" data-placeholder="Choice A → Ending A"></div>
               <div class="choice-arrow">→ leads to Ending A</div>
             </div>
             <div class="choice-box">
-              <input type="text" class="choice-field" id="a10_choiceB" placeholder="Choice B → Ending B">
+              <div class="collab-editor choice-field" data-field="a10_choiceB" data-placeholder="Choice B → Ending B"></div>
               <div class="choice-arrow">→ leads to Ending B</div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Anim 11 -->
       <div class="anim-card">
         <div class="card-label">
           <div class="card-number">11</div>
@@ -710,17 +939,17 @@
         </div>
         <div class="field-group">
           <label class="field-label">Animation / Scene Description</label>
-          <textarea class="story-field" id="a11_story" placeholder="The lead-up to the final choice..."></textarea>
+          <div class="collab-editor story-field" data-field="a11_story" data-placeholder="The lead-up to the final choice..."></div>
         </div>
         <div class="field-group">
           <label class="field-label choice-label">Final Choice</label>
           <div class="choice-row">
             <div class="choice-box">
-              <input type="text" class="choice-field" id="a11_choiceA" placeholder="Choice A → Ending A">
+              <div class="collab-editor choice-field" data-field="a11_choiceA" data-placeholder="Choice A → Ending A"></div>
               <div class="choice-arrow">→ leads to Ending A</div>
             </div>
             <div class="choice-box">
-              <input type="text" class="choice-field" id="a11_choiceB" placeholder="Choice B → Ending B">
+              <div class="collab-editor choice-field" data-field="a11_choiceB" data-placeholder="Choice B → Ending B"></div>
               <div class="choice-arrow">→ leads to Ending B</div>
             </div>
           </div>
@@ -737,33 +966,31 @@
       <div class="turn-desc">2 possible endings</div>
     </div>
     <div class="anim-grid cols-2">
-      <!-- Ending A -->
       <div class="anim-card ending-card">
         <div class="card-label">
           <div class="card-number ending-num">ENDING A</div>
         </div>
         <div class="field-group">
           <label class="field-label ending-label">Ending Scene Description</label>
-          <textarea class="story-field-lg" id="endA_story" placeholder="How does this ending play out? What's the final moment the player sees?"></textarea>
+          <div class="collab-editor story-field-lg" data-field="endA_story" data-placeholder="How does this ending play out? What's the final moment the player sees?"></div>
         </div>
         <div class="field-group">
           <label class="field-label ending-label">Closing Message</label>
-          <input type="text" id="endA_message" placeholder="Final text shown to the player..." style="border-color: var(--red-dim);">
+          <div class="collab-editor" data-field="endA_message" data-placeholder="Final text shown to the player..." style="border-color: var(--red-dim);"></div>
         </div>
       </div>
 
-      <!-- Ending B -->
       <div class="anim-card ending-card">
         <div class="card-label">
           <div class="card-number ending-num">ENDING B</div>
         </div>
         <div class="field-group">
           <label class="field-label ending-label">Ending Scene Description</label>
-          <textarea class="story-field-lg" id="endB_story" placeholder="How does this ending play out? What's the final moment the player sees?"></textarea>
+          <div class="collab-editor story-field-lg" data-field="endB_story" data-placeholder="How does this ending play out? What's the final moment the player sees?"></div>
         </div>
         <div class="field-group">
           <label class="field-label ending-label">Closing Message</label>
-          <input type="text" id="endB_message" placeholder="Final text shown to the player..." style="border-color: var(--red-dim);">
+          <div class="collab-editor" data-field="endB_message" data-placeholder="Final text shown to the player..." style="border-color: var(--red-dim);"></div>
         </div>
       </div>
     </div>
@@ -772,9 +999,8 @@
 
 <!-- Save bar -->
 <div class="save-bar">
-  <button class="btn btn-gold" onclick="saveData()">Save Progress</button>
+  <button class="btn btn-gold" onclick="saveAllFields()">Save Progress</button>
   <button class="btn btn-outline" onclick="exportData()">Export as JSON</button>
-  <button class="btn btn-outline" onclick="clearData()">Clear All</button>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -868,7 +1094,6 @@
   });
   svg.appendChild(ng);
 
-  // Turn labels
   const lg = document.createElementNS(ns,'g');
   [1,2,4,2,2].forEach((cnt,i) => {
     const y=ny(i);
@@ -883,7 +1108,6 @@
   el.textContent='END';lg.appendChild(el);
   svg.appendChild(lg);
 
-  // Merge label
   const ml=document.createElementNS(ns,'text');
   ml.setAttribute('x',nx(0.5));ml.setAttribute('y',(ny(2)+ny(3))/2+3);ml.setAttribute('text-anchor','middle');
   ml.setAttribute('fill','#5b8a72');ml.setAttribute('font-family','Crimson Text,serif');ml.setAttribute('font-size','9');ml.setAttribute('font-style','italic');
@@ -891,67 +1115,444 @@
 })();
 </script>
 
-<!-- Save / Load / Export -->
+<!-- Collaborative Editor Logic -->
 <script>
-  const ALL_FIELDS = [
-    'a1_story','a1_choiceA','a1_choiceB',
-    'a2_story','a2_choiceA','a2_choiceB',
-    'a3_story','a3_choiceA','a3_choiceB',
-    'a4_story','a4_choiceA','a4_choiceB',
-    'a5_story','a5_choiceA','a5_choiceB',
-    'a6_story','a6_choiceA','a6_choiceB',
-    'a7_story','a7_choiceA','a7_choiceB',
-    'a8_story','a8_choiceA','a8_choiceB',
-    'a9_story','a9_choiceA','a9_choiceB',
-    'a10_story','a10_choiceA','a10_choiceB',
-    'a11_story','a11_choiceA','a11_choiceB',
-    'endA_story','endA_message',
-    'endB_story','endB_message',
+(function() {
+  // === State ===
+  let currentUser = null; // { userId, name, color }
+  let serverData = { users: {}, fields: {}, version: 0 };
+  let localEdits = {}; // fieldId -> segments (unsaved local state)
+  let focusedField = null;
+  let pollTimer = null;
+
+  const PRESET_COLORS = [
+    '#e06c75', '#61afef', '#98c379', '#d19a66',
+    '#c678dd', '#56b6c2', '#e5c07b', '#be5046'
   ];
 
-  function showToast(msg) {
+  // === Utility ===
+  function showToast(msg, isError) {
     const t = document.getElementById('toast');
     t.textContent = msg;
-    t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 2000);
+    t.className = 'toast show' + (isError ? ' error' : '');
+    setTimeout(() => t.className = 'toast', 2500);
   }
 
-  function gatherData() {
-    const data = {};
-    ALL_FIELDS.forEach(id => {
-      const el = document.getElementById(id);
-      if (el) data[id] = el.value;
+  function generateId() {
+    return 'user_' + Math.random().toString(36).substr(2, 9);
+  }
+
+  // === Registration Modal ===
+  function initRegistration() {
+    const saved = localStorage.getItem('storyplanner_user');
+    if (saved) {
+      currentUser = JSON.parse(saved);
+      document.getElementById('regModal').classList.add('hidden');
+      registerUserOnServer();
+      startApp();
+      return;
+    }
+
+    const swatchContainer = document.getElementById('colorSwatches');
+    let selectedColor = null;
+
+    PRESET_COLORS.forEach(color => {
+      const s = document.createElement('div');
+      s.className = 'swatch';
+      s.style.background = color;
+      s.addEventListener('click', () => {
+        document.querySelectorAll('.swatch').forEach(sw => sw.classList.remove('selected'));
+        s.classList.add('selected');
+        selectedColor = color;
+        updateJoinBtn();
+      });
+      swatchContainer.appendChild(s);
     });
-    return data;
-  }
 
-  function loadData(data) {
-    ALL_FIELDS.forEach(id => {
-      const el = document.getElementById(id);
-      if (el && data[id] !== undefined) el.value = data[id];
+    const nameInput = document.getElementById('regName');
+    const joinBtn = document.getElementById('regSubmit');
+
+    function updateJoinBtn() {
+      joinBtn.disabled = !nameInput.value.trim() || !selectedColor;
+    }
+
+    nameInput.addEventListener('input', updateJoinBtn);
+
+    joinBtn.addEventListener('click', () => {
+      const name = nameInput.value.trim();
+      if (!name || !selectedColor) return;
+
+      currentUser = {
+        userId: generateId(),
+        name: name,
+        color: selectedColor,
+      };
+      localStorage.setItem('storyplanner_user', JSON.stringify(currentUser));
+      document.getElementById('regModal').classList.add('hidden');
+      registerUserOnServer();
+      startApp();
     });
   }
 
-  async function saveToServer(silent) {
+  async function registerUserOnServer() {
     try {
-      const resp = await fetch('/api/data', {
+      await fetch('/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(gatherData(), null, 2),
+        body: JSON.stringify(currentUser),
       });
-      if (!resp.ok) throw new Error('Server error');
-      if (!silent) showToast('Progress saved!');
-    } catch(e) {
-      if (!silent) showToast('Save failed — server may be down');
+    } catch (e) { /* silently fail, will retry on next save */ }
+  }
+
+  // === User Panel ===
+  function renderUserPanel() {
+    const panel = document.getElementById('userPanel');
+    panel.innerHTML = '';
+    for (const [uid, info] of Object.entries(serverData.users)) {
+      const chip = document.createElement('div');
+      chip.className = 'user-chip';
+      const dot = document.createElement('div');
+      dot.className = 'user-dot';
+      dot.style.background = info.color;
+      const label = document.createElement('span');
+      label.textContent = info.name;
+      if (currentUser && uid === currentUser.userId) {
+        label.textContent += ' (you)';
+      }
+      chip.appendChild(dot);
+      chip.appendChild(label);
+      panel.appendChild(chip);
     }
   }
 
-  function saveData() {
-    saveToServer(false);
+  // === Collaborative Editors ===
+
+  function getEditorSegments(editor) {
+    const segments = [];
+    const spans = editor.querySelectorAll('.seg, .seg-gap');
+    spans.forEach(span => {
+      const uid = span.dataset.userId;
+      const text = span.textContent;
+      if (text.length > 0 && uid) {
+        // Merge consecutive segments from same user
+        if (segments.length > 0 && segments[segments.length - 1].userId === uid) {
+          segments[segments.length - 1].text += text;
+        } else {
+          segments.push({ userId: uid, text });
+        }
+      }
+    });
+    return segments;
   }
 
+  function renderEditor(editor, segments, forceRender) {
+    const fieldId = editor.dataset.field;
+    const isFocused = document.activeElement === editor || editor.contains(document.activeElement);
+
+    // Don't re-render focused editors unless forced
+    if (isFocused && !forceRender) return;
+
+    // Save and restore cursor position by character offset
+    editor.innerHTML = '';
+
+    if (!segments || segments.length === 0) {
+      // Empty field: single editable gap
+      const gap = createGap();
+      editor.appendChild(gap);
+      editor.setAttribute('contenteditable', 'true');
+      return;
+    }
+
+    editor.setAttribute('contenteditable', 'true');
+
+    // Leading gap for current user to type before first segment
+    if (segments[0].userId !== (currentUser && currentUser.userId)) {
+      editor.appendChild(createGap());
+    }
+
+    segments.forEach((seg, i) => {
+      const span = document.createElement('span');
+      const isMine = currentUser && seg.userId === currentUser.userId;
+
+      span.className = isMine ? 'seg seg-mine' : 'seg seg-other';
+      span.dataset.userId = seg.userId;
+      span.textContent = seg.text;
+
+      const userInfo = serverData.users[seg.userId];
+      if (userInfo) {
+        span.style.color = userInfo.color;
+      }
+
+      if (!isMine) {
+        span.setAttribute('contenteditable', 'false');
+      }
+
+      editor.appendChild(span);
+
+      // Insert gap after other-user segments so current user can type between them
+      const nextSeg = segments[i + 1];
+      if (!isMine && nextSeg && nextSeg.userId !== (currentUser && currentUser.userId)) {
+        editor.appendChild(createGap());
+      } else if (!isMine && !nextSeg) {
+        // Trailing gap after last other-user segment
+        editor.appendChild(createGap());
+      }
+    });
+  }
+
+  function createGap() {
+    const gap = document.createElement('span');
+    gap.className = 'seg seg-gap';
+    gap.dataset.userId = currentUser ? currentUser.userId : '';
+    gap.style.color = currentUser ? currentUser.color : 'inherit';
+    // Use zero-width space to make the gap focusable/clickable
+    gap.textContent = '';
+    return gap;
+  }
+
+  function setupEditor(editor) {
+    // Handle input: mark new text with current user's color
+    editor.addEventListener('beforeinput', (e) => {
+      if (!currentUser) {
+        e.preventDefault();
+        return;
+      }
+
+      const sel = window.getSelection();
+      if (!sel.rangeCount) return;
+
+      // Block delete/backspace that would cross into other-user spans
+      if (e.inputType === 'deleteContentBackward' || e.inputType === 'deleteContentForward' ||
+          e.inputType === 'deleteByCut' || e.inputType === 'deleteByDrag') {
+        const range = sel.getRangeAt(0);
+        if (!range.collapsed) {
+          // Check if selection contains other-user content
+          const contents = range.cloneContents();
+          const otherSpans = contents.querySelectorAll('.seg-other');
+          if (otherSpans.length > 0) {
+            e.preventDefault();
+            showToast("Can't delete other users' text", true);
+            return;
+          }
+        } else {
+          // Single char delete — check if it would affect an other-user span
+          const node = sel.anchorNode;
+          const container = node.nodeType === 3 ? node.parentElement : node;
+          if (container && container.classList && container.classList.contains('seg-other')) {
+            e.preventDefault();
+            return;
+          }
+          // Check if backspace at start of gap would eat into previous other-user span
+          if (e.inputType === 'deleteContentBackward' && sel.anchorOffset === 0) {
+            const prev = container.previousSibling;
+            if (prev && prev.classList && prev.classList.contains('seg-other')) {
+              e.preventDefault();
+              return;
+            }
+          }
+          // Check if forward delete at end would eat into next other-user span
+          if (e.inputType === 'deleteContentForward') {
+            const atEnd = node.nodeType === 3 ? sel.anchorOffset >= node.textContent.length : true;
+            if (atEnd) {
+              const next = container.nextSibling;
+              if (next && next.classList && next.classList.contains('seg-other')) {
+                e.preventDefault();
+                return;
+              }
+            }
+          }
+        }
+      }
+
+      // Block drag-drop
+      if (e.inputType === 'insertFromDrop' || e.inputType === 'deleteByDrag') {
+        e.preventDefault();
+        return;
+      }
+
+      // Handle paste as plain text
+      if (e.inputType === 'insertFromPaste') {
+        e.preventDefault();
+        const text = e.dataTransfer ? e.dataTransfer.getData('text/plain') : '';
+        if (text) {
+          insertTextAtCursor(editor, text);
+        }
+        return;
+      }
+
+      // For regular typing, ensure we're inside a user-owned span
+      if (e.inputType === 'insertText' || e.inputType === 'insertCompositionText') {
+        const node = sel.anchorNode;
+        const container = node.nodeType === 3 ? node.parentElement : node;
+        if (container && container.classList && container.classList.contains('seg-other')) {
+          e.preventDefault();
+          return;
+        }
+        // If typing directly into the editor div (not in a span), wrap in a span
+        if (container === editor) {
+          e.preventDefault();
+          if (e.data) {
+            insertTextAtCursor(editor, e.data);
+          }
+          return;
+        }
+        // Ensure the span we're in is marked as ours
+        if (container.classList && (container.classList.contains('seg-gap') || container.classList.contains('seg-mine'))) {
+          container.dataset.userId = currentUser.userId;
+          container.style.color = currentUser.color;
+          container.classList.remove('seg-gap');
+          container.classList.add('seg', 'seg-mine');
+        }
+      }
+    });
+
+    // Handle Enter key — insert newline rather than div
+    editor.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        insertTextAtCursor(editor, '\n');
+      }
+    });
+
+    // Track focus
+    editor.addEventListener('focus', () => {
+      focusedField = editor.dataset.field;
+    });
+
+    editor.addEventListener('blur', () => {
+      if (focusedField === editor.dataset.field) {
+        focusedField = null;
+      }
+      // Store local state
+      const segs = getEditorSegments(editor);
+      localEdits[editor.dataset.field] = segs;
+    });
+
+    // MutationObserver safety net
+    const observer = new MutationObserver((mutations) => {
+      // Check if any other-user span was mutated
+      for (const m of mutations) {
+        if (m.target.classList && m.target.classList.contains('seg-other')) {
+          // Revert: re-render from server data
+          const fieldId = editor.dataset.field;
+          const segments = localEdits[fieldId] || serverData.fields[fieldId] || [];
+          renderEditor(editor, segments, true);
+          return;
+        }
+      }
+    });
+    observer.observe(editor, { childList: true, subtree: true, characterData: true });
+  }
+
+  function insertTextAtCursor(editor, text) {
+    const sel = window.getSelection();
+    if (!sel.rangeCount) return;
+
+    const range = sel.getRangeAt(0);
+    range.deleteContents();
+
+    const node = sel.anchorNode;
+    let container = node.nodeType === 3 ? node.parentElement : node;
+
+    // If we're at the editor level, find or create a span
+    if (container === editor) {
+      const span = document.createElement('span');
+      span.className = 'seg seg-mine';
+      span.dataset.userId = currentUser.userId;
+      span.style.color = currentUser.color;
+      span.textContent = text;
+      range.insertNode(span);
+      // Place cursor at end of span
+      const newRange = document.createRange();
+      newRange.setStartAfter(span.lastChild || span);
+      newRange.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(newRange);
+      return;
+    }
+
+    // If in a gap or own span, just insert text
+    if (container.classList && (container.classList.contains('seg-gap') || container.classList.contains('seg-mine'))) {
+      container.dataset.userId = currentUser.userId;
+      container.style.color = currentUser.color;
+      container.classList.remove('seg-gap');
+      container.classList.add('seg', 'seg-mine');
+      const textNode = document.createTextNode(text);
+      range.insertNode(textNode);
+      const newRange = document.createRange();
+      newRange.setStartAfter(textNode);
+      newRange.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(newRange);
+    }
+  }
+
+  // === Save ===
+  async function saveAllFields() {
+    if (!currentUser) {
+      showToast('Please register first', true);
+      return;
+    }
+
+    // Collect current state from all editors
+    const editors = document.querySelectorAll('.collab-editor');
+    let errors = 0;
+    let saved = 0;
+
+    for (const editor of editors) {
+      const fieldId = editor.dataset.field;
+      const segments = getEditorSegments(editor);
+
+      // Skip empty fields that were already empty on server
+      const serverSegs = serverData.fields[fieldId] || [];
+      if (segments.length === 0 && serverSegs.length === 0) continue;
+
+      // Skip if nothing changed
+      if (JSON.stringify(segments) === JSON.stringify(serverSegs)) continue;
+
+      try {
+        const resp = await fetch('/api/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: currentUser.userId, fieldId, segments }),
+        });
+
+        if (resp.ok) {
+          const result = await resp.json();
+          serverData.fields[fieldId] = segments;
+          serverData.version = result.version;
+          saved++;
+        } else {
+          const err = await resp.json();
+          console.error(`Save error for ${fieldId}:`, err.error);
+          errors++;
+        }
+      } catch (e) {
+        errors++;
+      }
+    }
+
+    if (errors > 0) {
+      showToast(`Saved with ${errors} error(s) — some fields may have conflicts`, true);
+    } else if (saved > 0) {
+      showToast('Progress saved!');
+    } else {
+      showToast('No changes to save');
+    }
+  }
+  // Expose globally for the onclick handler
+  window.saveAllFields = saveAllFields;
+
+  // === Export ===
   function exportData() {
-    const blob = new Blob([JSON.stringify(gatherData(), null, 2)], { type: 'application/json' });
+    // Export as flat text for simplicity
+    const out = {};
+    const editors = document.querySelectorAll('.collab-editor');
+    editors.forEach(ed => {
+      const segs = getEditorSegments(ed);
+      out[ed.dataset.field] = segs.map(s => s.text).join('');
+    });
+    const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -960,31 +1561,73 @@
     URL.revokeObjectURL(url);
     showToast('Exported as JSON!');
   }
+  window.exportData = exportData;
 
-  function clearData() {
-    if (confirm('Clear all fields? This cannot be undone.')) {
-      ALL_FIELDS.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.value = '';
-      });
-      saveToServer(true);
-      showToast('All fields cleared');
+  // === Sync / Polling ===
+  async function fetchFullData() {
+    try {
+      const resp = await fetch('/api/data');
+      if (!resp.ok) return;
+      serverData = await resp.json();
+      renderUserPanel();
+      renderAllEditors();
+      updateSyncDot(true);
+    } catch (e) {
+      updateSyncDot(false);
     }
   }
 
-  // Auto-load from server on startup
-  (async function() {
+  async function pollVersion() {
     try {
-      const resp = await fetch('/api/data');
-      if (resp.ok) {
-        const data = await resp.json();
-        if (Object.keys(data).length > 0) loadData(data);
+      const resp = await fetch('/api/version');
+      if (!resp.ok) return;
+      const { version } = await resp.json();
+      if (version !== serverData.version) {
+        await fetchFullData();
       }
-    } catch(e) {}
-  })();
+      updateSyncDot(true);
+    } catch (e) {
+      updateSyncDot(false);
+    }
+  }
 
-  // Auto-save every 30 seconds
-  setInterval(() => { saveToServer(true); }, 30000);
+  function updateSyncDot(connected) {
+    const dot = document.getElementById('syncDot');
+    const label = document.getElementById('syncLabel');
+    if (connected) {
+      dot.className = 'sync-dot';
+      label.textContent = 'Connected';
+    } else {
+      dot.className = 'sync-dot stale';
+      label.textContent = 'Offline';
+    }
+  }
+
+  function renderAllEditors() {
+    const editors = document.querySelectorAll('.collab-editor');
+    editors.forEach(editor => {
+      const fieldId = editor.dataset.field;
+      const segments = serverData.fields[fieldId] || [];
+      renderEditor(editor, segments, false);
+    });
+  }
+
+  // === Start App ===
+  function startApp() {
+    // Setup all editors
+    const editors = document.querySelectorAll('.collab-editor');
+    editors.forEach(ed => setupEditor(ed));
+
+    // Initial data load
+    fetchFullData();
+
+    // Poll every 5 seconds
+    pollTimer = setInterval(pollVersion, 5000);
+  }
+
+  // === Init ===
+  initRegistration();
+})();
 </script>
 
 </body>

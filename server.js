@@ -2,10 +2,77 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
-const PORT = 3000;
-const SAVE_FILE = path.join(__dirname, 'story_planner_data.json');
+const PORT = process.env.PORT || 3000;
+const DATA_DIR = process.env.DATA_DIR || __dirname;
+const SAVE_FILE = path.join(DATA_DIR, 'story_planner_data.json');
 
-const server = http.createServer((req, res) => {
+// --- Data helpers ---
+
+function readData() {
+  if (!fs.existsSync(SAVE_FILE)) {
+    return { users: {}, fields: {}, version: 0 };
+  }
+  const raw = JSON.parse(fs.readFileSync(SAVE_FILE, 'utf8'));
+
+  // Already in new format
+  if (raw.users && raw.fields && typeof raw.version === 'number') {
+    return raw;
+  }
+
+  // Migrate old flat format: { fieldId: "text", ... }
+  const migrated = { users: {}, fields: {}, version: 1 };
+  const migratorId = 'user_migrated';
+  migrated.users[migratorId] = { name: 'Original Author', color: '#c9a84c' };
+
+  for (const [fieldId, text] of Object.entries(raw)) {
+    if (typeof text === 'string' && text.length > 0) {
+      migrated.fields[fieldId] = [{ userId: migratorId, text }];
+    }
+  }
+
+  // Save migrated data
+  fs.writeFileSync(SAVE_FILE, JSON.stringify(migrated, null, 2), 'utf8');
+  return migrated;
+}
+
+function writeData(data) {
+  fs.writeFileSync(SAVE_FILE, JSON.stringify(data, null, 2), 'utf8');
+}
+
+function parseBody(req) {
+  return new Promise((resolve, reject) => {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try { resolve(JSON.parse(body)); }
+      catch (e) { reject(e); }
+    });
+    req.on('error', reject);
+  });
+}
+
+function sendJSON(res, status, obj) {
+  res.writeHead(status, {
+    'Content-Type': 'application/json',
+    'Access-Control-Allow-Origin': '*',
+  });
+  res.end(JSON.stringify(obj));
+}
+
+// --- Server ---
+
+const server = http.createServer(async (req, res) => {
+  // CORS preflight
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204, {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+    });
+    res.end();
+    return;
+  }
+
   // Serve the HTML file
   if (req.method === 'GET' && (req.url === '/' || req.url === '/story_planner.html')) {
     const html = fs.readFileSync(path.join(__dirname, 'story_planner.html'), 'utf8');
@@ -14,34 +81,74 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // Load saved data
+  // GET /api/data — return full data
   if (req.method === 'GET' && req.url === '/api/data') {
-    if (fs.existsSync(SAVE_FILE)) {
-      const data = fs.readFileSync(SAVE_FILE, 'utf8');
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(data);
-    } else {
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end('{}');
+    const data = readData();
+    sendJSON(res, 200, data);
+    return;
+  }
+
+  // GET /api/version — lightweight polling
+  if (req.method === 'GET' && req.url === '/api/version') {
+    const data = readData();
+    sendJSON(res, 200, { version: data.version });
+    return;
+  }
+
+  // POST /api/users — register a user
+  if (req.method === 'POST' && req.url === '/api/users') {
+    try {
+      const { userId, name, color } = await parseBody(req);
+      if (!userId || !name || !color) {
+        sendJSON(res, 400, { error: 'Missing userId, name, or color' });
+        return;
+      }
+      const data = readData();
+      data.users[userId] = { name, color };
+      data.version++;
+      writeData(data);
+      sendJSON(res, 200, { ok: true });
+    } catch (e) {
+      sendJSON(res, 400, { error: 'Invalid JSON' });
     }
     return;
   }
 
-  // Save data
-  if (req.method === 'POST' && req.url === '/api/data') {
-    let body = '';
-    req.on('data', chunk => { body += chunk; });
-    req.on('end', () => {
-      try {
-        JSON.parse(body); // validate JSON
-        fs.writeFileSync(SAVE_FILE, body, 'utf8');
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end('{"ok":true}');
-      } catch (e) {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end('{"error":"Invalid JSON"}');
+  // POST /api/save — save segments for a field
+  if (req.method === 'POST' && req.url === '/api/save') {
+    try {
+      const { userId, fieldId, segments } = await parseBody(req);
+      if (!userId || !fieldId || !Array.isArray(segments)) {
+        sendJSON(res, 400, { error: 'Missing userId, fieldId, or segments array' });
+        return;
       }
-    });
+
+      const data = readData();
+
+      // Validate: no other user's text was deleted
+      const existing = data.fields[fieldId] || [];
+      for (const oldSeg of existing) {
+        if (oldSeg.userId !== userId) {
+          // Find this segment's text somewhere in the new segments
+          const found = segments.some(
+            s => s.userId === oldSeg.userId && s.text === oldSeg.text
+          );
+          if (!found) {
+            sendJSON(res, 409, {
+              error: 'Cannot delete or modify another user\'s text',
+            });
+            return;
+          }
+        }
+      }
+
+      data.fields[fieldId] = segments;
+      data.version++;
+      writeData(data);
+      sendJSON(res, 200, { ok: true, version: data.version });
+    } catch (e) {
+      sendJSON(res, 400, { error: 'Invalid JSON' });
+    }
     return;
   }
 
