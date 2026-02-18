@@ -451,9 +451,11 @@
     background: rgba(0,0,0,0.85);
     z-index: 1000;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
     padding: 20px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .modal-overlay.hidden { display: none; }
@@ -466,6 +468,8 @@
     max-width: 420px;
     width: 100%;
     text-align: center;
+    margin: auto 0;
+    flex-shrink: 0;
   }
 
   .modal h2 {
