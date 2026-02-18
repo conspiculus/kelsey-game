@@ -9,9 +9,17 @@ const SITE_PASSWORD = process.env.SITE_PASSWORD || 'kelsey2026';
 
 // --- Data helpers ---
 
+const STARTER_TEXT = "The story begins with a woman looking through a castle window across the plains to a distant mountain range. This is Kelsey, Lord Lady of the Castle Eyrie, In the Northern Wastes. The time has come for Her to return to her ancestral homeland in the Misty Mountains. Many perils await her on this journey and she will need help from her friends along the way, but first...";
+
 function readData() {
   if (!fs.existsSync(SAVE_FILE)) {
-    return { users: {}, fields: {}, version: 0 };
+    const seed = {
+      users: {},
+      fields: { a1_story: [{ userId: 'system', text: STARTER_TEXT }] },
+      version: 1,
+    };
+    writeData(seed);
+    return seed;
   }
   const raw = JSON.parse(fs.readFileSync(SAVE_FILE, 'utf8'));
 
